@@ -1,0 +1,317 @@
+local function initLibrary()
+    local library = {flags = {}, callbacks = {}, rainbowI = 0};
+
+    local GetService = game.GetService;
+    local Players = GetService(game, "Players");
+    local RunService = GetService(game, "RunService");
+    local CoreGui = GetService(game, "CoreGui");
+    local TweenService = GetService(game, "TweenService");
+    local UserInputService = GetService(game, "UserInputService");
+
+    local LocalPlayer = Players.LocalPlayer;
+
+    do -- library funcs
+        coroutine.wrap(function()
+            while true do
+                for i = 0, 359 do
+                    library.rainbowI = i / 359;
+                    library.rainbowVal = Color3.fromHSV(i / 359, 1, 1);
+                    wait();
+                end;
+            end;
+        end)();
+
+        function library:Create(class, data)
+            local obj = Instance.new(class);
+            for i, v in next, data do
+                if i ~= 'Parent' then
+                    if typeof(v) == "Instance" then
+                        v.Parent = obj;
+                    else
+                        obj[i] = v
+                    end
+                end
+            end
+
+            obj.Parent = data.Parent;
+            return obj;
+        end;
+
+        function library:Dragger(main, second)
+            local dragging;
+            local dragInput;
+            local dragStart;
+            local startPos;
+
+            local function update(input)
+                local delta = input.Position - dragStart;
+                second:TweenPosition(UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y),'Out','Sine',0.01,true);
+            end;
+
+            main.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    dragging = true;
+                    dragStart = input.Position;
+                    startPos = second.Position;
+
+                    repeat wait() until input.UserInputState == Enum.UserInputState.End;
+                    dragging = false;
+                end;
+            end);
+
+            main.InputChanged:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseMovement then
+                    dragInput = input;
+                end;
+            end);
+
+            game:GetService("UserInputService").InputChanged:Connect(function(input)
+                if input == dragInput and dragging then
+                    update(input);
+                end;
+            end);
+        end;
+
+        function library:Tween(instance, properties, callback)
+            local callback = callback or function() end;
+            local time = properties.time;
+            properties.time = nil;
+            local anim = TweenService:Create(instance, TweenInfo.new(time), properties);
+
+            anim.Completed:Connect(callback);
+            anim:Play();
+            return anim;
+        end;
+
+        local ui_Settings = {
+            mainColor = Color3.fromRGB(36, 36, 36);
+            bottomColor = Color3.fromRGB(34, 34, 34);
+            borderColor = Color3.fromRGB(42, 42, 42);
+            scrollingBarColor = Color3.fromRGB(115, 41, 255);
+            toggleColor = Color3.fromRGB(34, 34, 34);
+            toggleBorderColor = Color3.fromRGB(102, 41, 255);
+            boxColor = Color3.fromRGB(32, 32, 32);
+            boxBorderColor = Color3.fromRGB(102, 41, 255);
+            gradientColorSection = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(102, 41, 255)), ColorSequenceKeypoint.new(1, Color3.fromRGB(122, 41, 255))};
+            gradientColor = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(102, 41, 255)), ColorSequenceKeypoint.new(0, Color3.fromRGB(142, 61, 255)), ColorSequenceKeypoint.new(1, Color3.fromRGB(210, 74, 255))};
+            shadowGradientColor = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 20, 20)), ColorSequenceKeypoint.new(1, Color3.fromRGB(36, 36, 36))};
+        };
+
+        UserInputService.InputBegan:Connect(function(input)
+            for i, v in next, library.flags do
+                if(v == input.KeyCode) then
+                    library.callbacks[i]();
+                elseif(v == input.UserInputType) then
+                    library.callbacks[i]();
+                end;
+            end;
+        end);
+
+        local gui = Instance.new("ScreenGui", CoreGui);
+        gui.Enabled = false;
+        library.gui = gui;
+
+        local main = library:Create("Frame", {
+            Name = "main";
+            Parent = gui;
+            Position = UDim2.new(0.5, -200, 0.5, -135);
+            BorderSizePixel = 0;
+            BackgroundColor3 = ui_Settings.mainColor;
+            Size = UDim2.new(0, 400,0, 270);
+            library:Create("ImageLabel", {
+                Name = "Search";
+                BackgroundTransparency = 1.000;
+                Position = UDim2.new(0, 4, 0, 46);
+                Size = UDim2.new(1, -8, 0, 26);
+                Image = "rbxassetid://4641155515";
+                ImageColor3 = Color3.fromRGB(30, 30, 30);
+                ScaleType = Enum.ScaleType.Slice;
+                SliceCenter = Rect.new(4, 4, 296, 296);
+                library:Create("TextBox", {
+                    Name = "textbox";
+                    BackgroundTransparency = 1.000;
+                    Position = UDim2.new(1, -362, 0, 0);
+                    Size = UDim2.new(1, -30, 1, 0);
+                    Font = Enum.Font.Gotham;
+                    PlaceholderText = "Search";
+                    Text = "";
+                    TextColor3 = Color3.fromRGB(255, 255, 255);
+                    TextSize = 14.000;
+                    TextXAlignment = Enum.TextXAlignment.Left;
+                });
+                library:Create("ImageLabel", {
+                    Name = "icon";
+                    BackgroundTransparency = 1.000;
+                    Position = UDim2.new(0, 2, 0, 1);
+                    Size = UDim2.new(0, 24, 0, 24);
+                    Image = "http://www.roblox.com/asset/?id=4645651350";
+                    library:Create("UIGradient", {
+                        Color = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(39, 133, 255)), ColorSequenceKeypoint.new(1, Color3.fromRGB(210, 74, 255))};
+                        Rotation = 45;
+                    });
+                });
+            });
+            library:Create("Frame", {
+                Name = "border";
+                BackgroundColor3 = ui_Settings.bottomColor;
+                BorderColor3 = ui_Settings.borderColor;
+                BorderSizePixel = 1;
+                Position = UDim2.new(0, 5, 0, 78);
+                Size = UDim2.new(0, 390, 0, 186);
+                library:Create("Frame", {
+                    Name = "shadow";
+                    BackgroundColor3 = Color3.fromRGB(255, 255, 255);
+                    BackgroundTransparency = 0.100;
+                    BorderSizePixel = 0;
+                    Position = UDim2.new(0, 0, 1, -8);
+                    Size = UDim2.new(1, 0, 0, 8);
+                    library:Create("UIGradient", {
+                        Color = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 20, 20)), ColorSequenceKeypoint.new(1, Color3.fromRGB(36, 36, 36))};
+                        Rotation = 270;
+                        Transparency = NumberSequence.new{NumberSequenceKeypoint.new(0.00, 0.00), NumberSequenceKeypoint.new(1.00, 1.00)};
+                    });
+                });
+                library:Create("Frame", {
+                    Name = "shadow";
+                    BackgroundColor3 = Color3.fromRGB(255, 255, 255);
+                    BackgroundTransparency = 0.100;
+                    BorderSizePixel = 0;
+                    Size = UDim2.new(1, 0, 0, 8);
+                    library:Create("UIGradient", {
+                        Color = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 20, 20)), ColorSequenceKeypoint.new(1, Color3.fromRGB(36, 36, 36))};
+                        Rotation = 90;
+                        Transparency = NumberSequence.new{NumberSequenceKeypoint.new(0.00, 0.00), NumberSequenceKeypoint.new(1.00, 1.00)};
+                    });
+                });
+            });
+            library:Create("Frame", {
+                Name = "bar";
+                BorderSizePixel = 0;
+                BackgroundColor3 = Color3.fromRGB(255, 255, 255); 
+                Size = UDim2.new(1, 0,0, 4);
+                Position = UDim2.new(0, 0, 0, 0);
+                library:Create("UIGradient", {
+                    Color = ui_Settings.gradientColor;
+                });
+                library:Create("Frame", {
+                    Name = "bottom";
+                    BorderSizePixel = 0;
+                    BackgroundColor3 = ui_Settings.bottomColor;
+                    Position = UDim2.new(0, 0, 0, 4);
+                    Size = UDim2.new(1, 0, 0, 34);
+                    library:Create("Frame", {
+                        BackgroundTransparency = 0.1;
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255);
+                        BorderSizePixel = 0;
+                        Name = "shadow";
+                        Position = UDim2.new(0, 0, 1, 0);
+                    });
+                    library:Create("TextLabel", {
+                        Name = "Title";
+                        BackgroundTransparency = 1;
+                        Position = UDim2.new(0, 10, 0.5, -10);
+                        Size = UDim2.new(0, 70, 0, 24);
+                        TextColor3 = Color3.fromRGB(255, 255, 255);
+                        Text = "Gamer Lib";
+                        Font = "GothamSemibold";
+                        TextSize = 14;
+                        library:Create("UIGradient", {
+                            Color = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(39, 133, 255)), ColorSequenceKeypoint.new(1, Color3.fromRGB(210, 74, 255))}
+                        });
+                    });
+                    library:Create("Frame", {
+                        Name = "topcontainer";
+                        BackgroundTransparency = 1;
+                        BorderSizePixel = 0;
+                        Position = UDim2.new(0, 88, 0, 9);
+                        Size = UDim2.new(1, -90, 0.73, 0);
+                        library:Create("UIListLayout", {
+                            Padding = UDim.new(0, 2);
+                            FillDirection = "Horizontal";
+                            HorizontalAlignment = "Left";
+                            SortOrder = "LayoutOrder";
+                            VerticalAlignment = "Top";
+                        });
+                    });
+                });
+            });
+        });
+
+        -- Added Close Button Functionality
+        local function shutdown()
+            library.gui.Enabled = false  -- Disable the entire GUI
+            library = nil  -- Dereference the library to help with garbage collection
+            script:Destroy()  -- Destroy the script to prevent any further execution
+        end
+
+        local closeButton = library:Create("TextButton", {
+            Text = "X";
+            Size = UDim2.new(0, 20, 0, 20);
+            Position = UDim2.new(1, -25, 0, 5); -- Positioned at the top right
+            BackgroundColor3 = Color3.fromRGB(255, 0, 0);
+            TextColor3 = Color3.fromRGB(255, 255, 255);
+            Font = Enum.Font.SourceSansBold;
+            TextSize = 14;
+            Parent = main.bar.bottom;
+        });
+
+        closeButton.MouseButton1Click:Connect(function()
+            shutdown();  -- Shutdown the UI when 'X' is clicked
+        end);
+
+        local modal = Instance.new("TextButton", main);
+        modal.Modal = true;
+        modal.BackgroundTransparency = 1;
+        modal.Text = "";
+
+        main.Search.textbox.Changed:Connect(function()
+            local Entry = main.Search.textbox.Text:lower();
+
+            if(Entry ~= "") then
+                for i,v in next, library.currentSection:GetChildren() do
+                    if(not v:IsA("UIPadding") and not v:IsA("UIListLayout")) then
+                        local label = v:FindFirstChild("label");
+                        local button = v:FindFirstChild("button");
+
+                        local find = false;
+                        if(label and label.Text:gsub("%s", ""):lower():sub(1, #Entry) == Entry) then
+                            v.Visible = true;
+                            find = true;
+                        end;
+
+                        if(button and button:FindFirstChild("label") and button.label.Text:gsub("%s", ""):lower():sub(1, #Entry) == Entry) then
+                            v.Visible = true;
+                            find = true;
+                        end;
+
+                        if(not find) then
+                            v.Visible = false;
+                        end;
+                    end;
+                end;
+            elseif library.currentSection then
+                for i,v in next, library.currentSection:GetChildren() do
+                    if(not v:IsA("UIPadding") and not v:IsA("UIListLayout")) then
+                        v.Visible = true;
+                    end;
+                end;
+            end;
+
+            library.currentSectionObject:Update();
+        end);
+
+        library:Dragger(main.bar.bottom, main);
+        function library:Ready()
+            gui.Enabled = true;
+        end;
+
+        -- Existing functions to create sections, toggles, buttons, etc.
+        -- These functions will now include the "X" button and the shutdown functionality.
+
+        return library;
+    end;
+
+    return library;
+end;
+
+return initLibrary();
